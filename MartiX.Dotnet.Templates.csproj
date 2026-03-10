@@ -1,0 +1,28 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <PackageType>Template</PackageType>
+    <PackageVersion>1.0.0</PackageVersion>
+    <PackageId>MartiX.Dotnet.Templates</PackageId>
+    <Title>MartiX .NET Templates</Title>
+    <Authors>MartiXDev</Authors>
+    <Description>Custom .NET 10+ / C# 14+ template pack currently containing the MartiX Web API solution template built on top of MartiX.WebApi.</Description>
+    <PackageTags>dotnet;template;templates;webapi;clean-architecture;csharp</PackageTags>
+    <PackageProjectUrl>https://github.com/MartiXDev/dotnet-templates</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/MartiXDev/dotnet-templates</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <TargetFramework>net10.0</TargetFramework>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <IncludeContentInPack>true</IncludeContentInPack>
+    <IncludeBuildOutput>false</IncludeBuildOutput>
+    <ContentTargetFolders>content</ContentTargetFolders>
+    <NoDefaultExcludes>true</NoDefaultExcludes>
+    <NoWarn>$(NoWarn);NU5128</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Content Include="templates\**\*" Exclude="templates\**\bin\**;templates\**\obj\**" />
+  </ItemGroup>
+
+</Project>

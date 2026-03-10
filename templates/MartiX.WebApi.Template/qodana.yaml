@@ -1,0 +1,14 @@
+version: "1.0"
+linter: jetbrains/qodana-dotnet:2025.2
+profile:
+  name: qodana.recommended
+
+# Let Qodana auto-detect the repository solution so teams can keep `.slnx`
+# today or switch to `.sln` later without changing this template baseline.
+exclude:
+  - name: Build outputs
+    paths:
+      - bin
+      - obj
+      - .artifacts
+      - .scaffold

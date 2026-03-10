@@ -1,0 +1,47 @@
+# Copilot instructions for MartiX.WebApi.Template
+
+## Build, test, and scaffold commands
+
+```powershell
+dotnet restore
+dotnet build
+dotnet test
+.\scripts\bootstrap.ps1
+.\scripts\scaffold.ps1 verify
+```
+
+## High-level architecture
+
+- `src\MartiX.WebApi.Template.Web` is the main API host and application entry point.
+- `src\MartiX.WebApi.Template.ServiceDefaults` contains shared service defaults and
+  local infrastructure wiring. It remains part of the current reduced variants.
+- `src\MartiX.WebApi.Template.AspireHost` is the default local orchestration host when
+  the repository was scaffolded with `--orchestrator aspire`.
+- `src\MartiX.WebApi.Template.Blazor` is the default frontend baseline when the
+  repository was scaffolded with `--frontend blazor`.
+- `tests\MartiX.WebApi.Template.Web.Tests` contains the default test suite.
+
+## Repository AI assets
+
+- `docs\AI-SKILLS.md` declares the curated MartiX and external AI recommendations
+  for this repository.
+- `scripts\setup-ai.ps1` lists recommendations and performs explicit MartiX
+  marketplace registration and plugin installs only when the user asks for them.
+- `.copilot\mcp-config.json` enables GitHub MCP context when `GITHUB_TOKEN` is
+  available.
+- `.scaffold\` owns scaffold-managed repository assets; use
+  `scripts\bootstrap.ps1` or `scripts\update.ps1` to refresh them.
+
+## Practical guidance
+
+- Prefer repository-local files, commands, and tests before introducing new
+  patterns.
+- Do not assume ServiceDefaults, Aspire, or Blazor exist unless the generated
+  project actually contains them.
+- Do not assume external plugins or skills are already installed. Treat
+  `docs\AI-SKILLS.md` as opt-in guidance rather than a guaranteed dependency.
+- When MartiX marketplace plugins are installed, prefer `martix-webapi` for
+  end-to-end architecture tasks and the narrower MartiX packages for focused
+  .NET, FastEndpoints, FluentValidation, or TUnit questions.
+- Keep changes GitHub-friendly: small diffs, explicit validation commands, and
+  clear notes about any generated or scaffold-managed files.

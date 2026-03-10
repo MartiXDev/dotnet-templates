@@ -1,0 +1,143 @@
+# {{ProjectName}}
+
+This repository was generated from the MartiX Web API template and gives you a ready-to-run .NET 10 solution with:
+
+- an API project (`src\{{ProjectName}}.Web`)
+- shared service defaults (`src\{{ProjectName}}.ServiceDefaults`)
+- optional Aspire orchestration (`src\{{ProjectName}}.AspireHost`, default: `--orchestrator aspire`)
+- optional Blazor frontend (`src\{{ProjectName}}.Blazor`, default: `--frontend blazor`)
+- a test project (`tests\{{ProjectName}}.Web.Tests`)
+
+In this first conservative switch slice, `--frontend none` reuses the API-only Aspire host project (`src\{{ProjectName}}.AspireHost\{{ProjectName}}.AspireHost.NoBlazor.csproj`), and `--orchestrator none` scaffolds the direct API shape without the AppHost or frontend.
+
+## Prerequisites
+
+- .NET 10 SDK or later
+- Docker Desktop or another compatible container runtime when you keep the Aspire workflow
+- PowerShell or a POSIX shell if you want to run the scaffold helper scripts
+
+## First-time setup
+
+PowerShell:
+
+```powershell
+dotnet restore
+dotnet build
+dotnet test --solution .\{{ProjectName}}.slnx
+```
+
+Shell:
+
+```sh
+dotnet restore
+dotnet build
+dotnet test --solution ./{{ProjectName}}.slnx
+```
+
+If you want to materialize scaffold-managed repository docs such as `docs\SCAFFOLDING.md`, run:
+
+PowerShell:
+
+```powershell
+.\scripts\bootstrap.ps1
+```
+
+Shell:
+
+```sh
+./scripts/bootstrap.sh
+```
+
+## Quality and governance
+
+The generated GitHub baseline stays lightweight but still gives you practical
+defaults for new repositories:
+
+- `dotnet format whitespace --verify-no-changes` against the scaffolded `.editorconfig`
+- Markdown linting for the scaffolded README, contributing/release docs, setup/troubleshooting/scaffolding docs, and PR template using `.markdownlint-cli2.jsonc`
+- PowerShell syntax validation for generated `.ps1` scripts
+- Release builds with warnings treated as errors, while leaving the current baseline exceptions (`CS1591`, `NU1902`, and `ASPIRE002`) visible as warnings
+- test execution with Cobertura coverage output, while preserving raw results in `.artifacts\test-results` and publishing an HTML `coverage-report` artifact
+- pull request title validation using Conventional Commits so squash-merged history stays compatible with semantic versioning
+- Release Please automation on `main` and `master` that updates `CHANGELOG.md`, `version.txt`, and GitHub Releases from merged Conventional Commit history
+- an optional token-gated quality-analysis workflow for Sonar and Qodana that stays idle until the repository is configured for it
+
+The generated repository also includes a `global.json` entry that opts `dotnet test` into Microsoft.Testing.Platform on .NET 10 SDKs, so local and CI test commands stay aligned.
+
+See [`docs\SETUP.md`](docs/SETUP.md) for the local equivalents,
+[`docs\RELEASE.md`](docs/RELEASE.md) for the release flow, and
+[`docs\TROUBLESHOOTING.md`](docs/TROUBLESHOOTING.md) when one of those checks
+fails.
+
+## Supported template switches
+
+The documented golden path is still the default:
+
+- `dotnet new martix-webapi -n YourApp`
+- `dotnet new martix-webapi -n YourApp --frontend none` keeps Aspire and drops the Blazor project
+- `dotnet new martix-webapi -n YourApp --orchestrator none` drops the AppHost and, in this first iteration, also drops the frontend
+
+## Run locally
+
+### Full local experience with Aspire
+
+Use this when you scaffolded the default `--orchestrator aspire --frontend blazor` path. It is the easiest local experience because it provisions SQL Server and Papercut for you.
+
+PowerShell:
+
+```powershell
+dotnet run --project .\src\{{ProjectName}}.AspireHost\{{ProjectName}}.AspireHost.csproj
+```
+
+Shell:
+
+```sh
+dotnet run --project ./src/{{ProjectName}}.AspireHost/{{ProjectName}}.AspireHost.csproj
+```
+
+### API-only Aspire host
+
+Use this when you scaffolded with `--frontend none` or when the default scaffold's built-in API-only host better fits the task.
+
+PowerShell:
+
+```powershell
+dotnet run --project .\src\{{ProjectName}}.AspireHost\{{ProjectName}}.AspireHost.NoBlazor.csproj
+```
+
+Shell:
+
+```sh
+dotnet run --project ./src/{{ProjectName}}.AspireHost/{{ProjectName}}.AspireHost.NoBlazor.csproj
+```
+
+### Run the Web project directly
+
+This is useful for focused API work and is the primary entry point when you scaffolded with `--orchestrator none`. The template includes a default development connection string in `src\{{ProjectName}}.Web\appsettings.json`, and you can override it with `ConnectionStrings__AppDb` when needed.
+
+PowerShell:
+
+```powershell
+dotnet run --project .\src\{{ProjectName}}.Web\{{ProjectName}}.Web.csproj
+```
+
+Shell:
+
+```sh
+dotnet run --project ./src/{{ProjectName}}.Web/{{ProjectName}}.Web.csproj
+```
+
+## Database and configuration notes
+
+- The API applies pending EF Core migrations on startup.
+- `src\{{ProjectName}}.Web\appsettings.Development.json` currently enables `DatabaseOptions:RecreateOnStartup`, so development runs can recreate the database for a clean start.
+- The default development connection string lives in `src\{{ProjectName}}.Web\appsettings.json`.
+- Local overrides can come from environment variables, user secrets, or development-only config files.
+
+## Helpful docs
+
+- [`CONTRIBUTING.md`](CONTRIBUTING.md) - pull request title conventions, merge guidance, and local validation reminders
+- [`docs\RELEASE.md`](docs/RELEASE.md) - release workflow, semantic versioning, and optional Sonar/Qodana setup
+- [`docs\SETUP.md`](docs/SETUP.md) - first-run setup, local commands, and configuration guidance
+- [`docs\TROUBLESHOOTING.md`](docs/TROUBLESHOOTING.md) - common local development issues, CI quality gate failures, and fixes
+- `docs\SCAFFOLDING.md` - generated by `scripts\bootstrap.*`, `scripts\update.*`, and verified by `scripts\scaffold.* verify`

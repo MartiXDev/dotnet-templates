@@ -1,0 +1,224 @@
+# MartiX.WebApi.Template setup
+
+## Prerequisites
+
+- .NET 10 SDK or later
+- Docker Desktop or another compatible container runtime when you keep the Aspire workflow
+- PowerShell or a POSIX shell for the scaffold helper scripts
+- Node.js 20 or later if you want to run the same Markdown lint command locally that CI uses
+
+## Recommended first run
+
+From the repository root:
+
+PowerShell:
+
+```powershell
+dotnet restore
+dotnet build
+dotnet test --solution .\MartiX.WebApi.Template.slnx
+.\scripts\bootstrap.ps1
+```
+
+Shell:
+
+```sh
+dotnet restore
+dotnet build
+dotnet test --solution ./MartiX.WebApi.Template.slnx
+./scripts/bootstrap.sh
+```
+
+`bootstrap` materializes scaffold-managed repository docs such as `docs\SCAFFOLDING.md`.
+
+## Supported template switches
+
+The current switch surface intentionally stays small:
+
+- `dotnet new martix-webapi -n YourApp` keeps the documented golden path (`--frontend blazor --orchestrator aspire`)
+- `dotnet new martix-webapi -n YourApp --frontend none` keeps Aspire and scaffolds the API-only host path
+- `dotnet new martix-webapi -n YourApp --orchestrator none` scaffolds the direct API path and, in this first iteration, also omits the frontend
+
+## Local quality checks
+
+The generated CI workflow intentionally sticks to tools that are already part of the .NET SDK, GitHub-hosted runners, or a lightweight `npx` install for Markdown linting. Run the same checks locally before you push when you want faster feedback.
+
+The generated repository includes a `global.json` entry that opts `dotnet test` into Microsoft.Testing.Platform on .NET 10 SDKs.
+
+### Core .NET validation
+
+PowerShell:
+
+```powershell
+dotnet restore .\MartiX.WebApi.Template.slnx
+dotnet format whitespace .\MartiX.WebApi.Template.slnx --verify-no-changes --no-restore
+dotnet build .\MartiX.WebApi.Template.slnx --no-restore --configuration Release -p:TreatWarningsAsErrors=true
+dotnet test --solution .\MartiX.WebApi.Template.slnx --no-build --configuration Release --results-directory .\.artifacts\test-results --coverage --coverage-output-format cobertura --report-trx
+```
+
+Shell:
+
+```sh
+dotnet restore ./MartiX.WebApi.Template.slnx
+dotnet format whitespace ./MartiX.WebApi.Template.slnx --verify-no-changes --no-restore
+dotnet build ./MartiX.WebApi.Template.slnx --no-restore --configuration Release -p:TreatWarningsAsErrors=true
+dotnet test --solution ./MartiX.WebApi.Template.slnx --no-build --configuration Release --results-directory ./.artifacts/test-results --coverage --coverage-output-format cobertura --report-trx
+```
+
+### Markdown linting
+
+The scaffolded `.markdownlint-cli2.jsonc` file is the source of truth for Markdown linting. If Node.js is available locally, you can run the same command as CI:
+
+PowerShell:
+
+```powershell
+npx --yes markdownlint-cli2 "README.md" "CONTRIBUTING.md" "docs/SETUP.md" "docs/RELEASE.md" "docs/TROUBLESHOOTING.md" "docs/SCAFFOLDING.md" ".github/pull_request_template.md"
+```
+
+Shell:
+
+```sh
+npx --yes markdownlint-cli2 "README.md" "CONTRIBUTING.md" "docs/SETUP.md" "docs/RELEASE.md" "docs/TROUBLESHOOTING.md" "docs/SCAFFOLDING.md" ".github/pull_request_template.md"
+```
+
+### PowerShell script syntax validation
+
+When you change generated `.ps1` scripts, the CI workflow validates them with the built-in PowerShell parser instead of adding heavier lint tooling. Run the same check locally from the repository root:
+
+```powershell
+$scripts = Get-ChildItem -Path .\scripts -Filter *.ps1 -File -Recurse
+
+$parseErrors = foreach ($script in $scripts) {
+  $tokens = $null
+  $errors = $null
+  [System.Management.Automation.Language.Parser]::ParseFile($script.FullName, [ref] $tokens, [ref] $errors) | Out-Null
+
+  foreach ($error in $errors) {
+    [pscustomobject]@{
+      File = $script.FullName
+      Line = $error.Extent.StartLineNumber
+      Column = $error.Extent.StartColumnNumber
+      Message = $error.Message
+    }
+  }
+}
+
+if (@($parseErrors).Count -gt 0) {
+  $parseErrors | Format-Table -AutoSize
+  throw 'PowerShell script validation failed.'
+}
+```
+
+### Coverage artifacts
+
+`dotnet test` writes raw test and coverage output beneath `.artifacts\test-results`. The generated CI workflow keeps uploading that folder as the `test-results` artifact and, when one or more `*.cobertura.xml` files are present, also publishes a `coverage-report` artifact with an HTML summary.
+
+The Release build gate still leaves the current starter-template exceptions (`CS1591`, `NU1902`, and `ASPIRE002`) as warnings so you can see them without breaking the initial scaffold.
+
+### Release governance and optional static analysis
+
+- `.github/workflows/conventional-commits.yml` validates pull request titles
+  against Conventional Commits, so prefer **Squash and merge** and keep the PR
+  title stable once CI passes.
+- `.github/workflows/release-please.yml` watches `main` and `master` and uses
+  `release-please-config.json`, `.release-please-manifest.json`, `version.txt`,
+  and `CHANGELOG.md` to manage semantic versions and GitHub Releases.
+- If you want CI checks to run on Release Please pull requests, add a
+  `RELEASE_PLEASE_TOKEN` secret backed by a fine-grained personal access token.
+  Otherwise the workflow falls back to the default `GITHUB_TOKEN`.
+- `.github/workflows/quality-analysis.yml` is dormant until you configure
+  credentials. Sonar needs `SONAR_TOKEN` plus `SONAR_HOST_URL` and
+  `SONAR_PROJECT_KEY` repository variables; add `SONAR_ORGANIZATION` for
+  SonarCloud. Qodana needs `QODANA_TOKEN`.
+
+See [`docs/RELEASE.md`](RELEASE.md) for the full release flow and the expected
+GitHub repository settings.
+
+## Local development workflows
+
+### Full Aspire workflow
+
+Use this when you scaffolded the default `--orchestrator aspire --frontend blazor` experience and want SQL Server, Papercut, the API, and the generated Blazor frontend.
+
+PowerShell:
+
+```powershell
+dotnet run --project .\src\MartiX.WebApi.Template.AspireHost\MartiX.WebApi.Template.AspireHost.csproj
+```
+
+Shell:
+
+```sh
+dotnet run --project ./src/MartiX.WebApi.Template.AspireHost/MartiX.WebApi.Template.AspireHost.csproj
+```
+
+### API-only Aspire workflow
+
+Use this when you scaffolded with `--frontend none` or when you want the SQL Server and Papercut dependencies managed for you but do not need the Blazor frontend.
+
+PowerShell:
+
+```powershell
+dotnet run --project .\src\MartiX.WebApi.Template.AspireHost\MartiX.WebApi.Template.AspireHost.NoBlazor.csproj
+```
+
+Shell:
+
+```sh
+dotnet run --project ./src/MartiX.WebApi.Template.AspireHost/MartiX.WebApi.Template.AspireHost.NoBlazor.csproj
+```
+
+### Direct API workflow
+
+Use this when you scaffolded with `--orchestrator none` or only want to run the API project itself.
+
+PowerShell:
+
+```powershell
+dotnet run --project .\src\MartiX.WebApi.Template.Web\MartiX.WebApi.Template.Web.csproj
+```
+
+Shell:
+
+```sh
+dotnet run --project ./src/MartiX.WebApi.Template.Web/MartiX.WebApi.Template.Web.csproj
+```
+
+If you skip Aspire, the default development configuration falls back to the connection string in `src\MartiX.WebApi.Template.Web\appsettings.json`. Override `ConnectionStrings__AppDb` when you want a different SQL Server target.
+
+## Database and migrations
+
+- Pending migrations are applied automatically on application startup.
+- Development runs currently use `DatabaseOptions:RecreateOnStartup = true`, which can delete and recreate the database for a clean local state.
+- The default connection string is stored in `src\MartiX.WebApi.Template.Web\appsettings.json`.
+
+If you need to create or apply EF Core migrations manually, use the Web project as the migration project:
+
+PowerShell:
+
+```powershell
+dotnet ef migrations add <MigrationName> --project .\src\MartiX.WebApi.Template.Web\MartiX.WebApi.Template.Web.csproj
+dotnet ef database update --project .\src\MartiX.WebApi.Template.Web\MartiX.WebApi.Template.Web.csproj
+```
+
+Shell:
+
+```sh
+dotnet ef migrations add <MigrationName> --project ./src/MartiX.WebApi.Template.Web/MartiX.WebApi.Template.Web.csproj
+dotnet ef database update --project ./src/MartiX.WebApi.Template.Web/MartiX.WebApi.Template.Web.csproj
+```
+
+## Local configuration
+
+Use one of these approaches for local-only overrides:
+
+- environment variables such as `ConnectionStrings__AppDb`
+- `appsettings.Development.json`
+- `dotnet user-secrets` on projects that already have a `UserSecretsId`
+
+## Useful endpoints
+
+- API: `https://localhost:57379`
+- Scalar API docs: `https://localhost:57379/scalar`
+- Blazor frontend (when included): `https://localhost:57380`
+- Papercut UI (when using Aspire): `http://localhost:37408`

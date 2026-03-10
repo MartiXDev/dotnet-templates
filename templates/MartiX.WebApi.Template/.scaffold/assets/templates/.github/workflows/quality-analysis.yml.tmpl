@@ -1,0 +1,168 @@
+name: Quality analysis
+
+on:
+  workflow_dispatch:
+  pull_request:
+  push:
+    branches:
+      - main
+      - master
+
+jobs:
+  sonar:
+    name: Sonar (optional)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+    env:
+      SONAR_HOST_URL: ${{ vars.SONAR_HOST_URL }}
+      SONAR_ORGANIZATION: ${{ vars.SONAR_ORGANIZATION }}
+      SONAR_PROJECT_KEY: ${{ vars.SONAR_PROJECT_KEY }}
+      SONAR_PROJECT_NAME: ${{ github.event.repository.name }}
+      SONAR_TOKEN_PRESENT: ${{ secrets.SONAR_TOKEN != '' }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Skip reason (fork PR)
+        if: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.fork == true }}
+        run: |
+          echo "### Sonar" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Skipping Sonar: pull requests from forks do not receive repository secrets." >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Skip reason (configuration missing)
+        if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.fork == false) && (env.SONAR_TOKEN_PRESENT != 'true' || env.SONAR_HOST_URL == '' || env.SONAR_PROJECT_KEY == '') }}
+        run: |
+          echo "### Sonar" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Skipping Sonar: configure SONAR_TOKEN plus SONAR_HOST_URL and SONAR_PROJECT_KEY repository variables." >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Setup .NET
+        if: ${{ env.SONAR_TOKEN_PRESENT == 'true' && env.SONAR_HOST_URL != '' && env.SONAR_PROJECT_KEY != '' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.fork == false) }}
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Resolve solution file
+        id: solution
+        if: ${{ env.SONAR_TOKEN_PRESENT == 'true' && env.SONAR_HOST_URL != '' && env.SONAR_PROJECT_KEY != '' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.fork == false) }}
+        shell: bash
+        run: |
+          solution=$(find . -maxdepth 1 \( -name '*.slnx' -o -name '*.sln' \) | head -n 1)
+          if [ -z "$solution" ]; then
+            echo "No solution file was found at the repository root." >&2
+            exit 1
+          fi
+          echo "solution=$solution" >> "$GITHUB_OUTPUT"
+
+      - name: Install SonarScanner
+        if: ${{ env.SONAR_TOKEN_PRESENT == 'true' && env.SONAR_HOST_URL != '' && env.SONAR_PROJECT_KEY != '' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.fork == false) }}
+        run: dotnet tool install --global dotnet-sonarscanner
+
+      - name: Sonar scan
+        if: ${{ env.SONAR_TOKEN_PRESENT == 'true' && env.SONAR_HOST_URL != '' && env.SONAR_PROJECT_KEY != '' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.fork == false) }}
+        shell: pwsh
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SOLUTION_PATH: ${{ steps.solution.outputs.solution }}
+        run: |
+          $scannerStarted = $false
+          $propertyArgs = @()
+
+          if (Test-Path 'sonar-project.properties') {
+            $propertyArgs = Get-Content 'sonar-project.properties' |
+              ForEach-Object { $_.Trim() } |
+              Where-Object { $_ -and -not $_.StartsWith('#') } |
+              ForEach-Object { "/d:$_" }
+          }
+
+          $beginArgs = @(
+            'sonarscanner',
+            'begin',
+            "/k:$env:SONAR_PROJECT_KEY",
+            "/n:$env:SONAR_PROJECT_NAME",
+            "/d:sonar.host.url=$env:SONAR_HOST_URL",
+            "/d:sonar.token=$env:SONAR_TOKEN"
+          ) + $propertyArgs
+
+          if (-not [string]::IsNullOrWhiteSpace($env:SONAR_ORGANIZATION)) {
+            $beginArgs += "/o:$env:SONAR_ORGANIZATION"
+          }
+
+          try {
+            & dotnet @beginArgs
+            if ($LASTEXITCODE -ne 0) {
+              throw 'SonarScanner begin failed.'
+            }
+
+            $scannerStarted = $true
+
+            dotnet restore $env:SOLUTION_PATH
+            if ($LASTEXITCODE -ne 0) {
+              throw 'dotnet restore failed.'
+            }
+
+            dotnet build $env:SOLUTION_PATH --no-restore --configuration Release -p:TreatWarningsAsErrors=true
+            if ($LASTEXITCODE -ne 0) {
+              throw 'dotnet build failed.'
+            }
+
+            dotnet test $env:SOLUTION_PATH --no-build --configuration Release --logger trx --results-directory ./.artifacts/test-results --collect 'XPlat Code Coverage' -- DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.Format=opencover
+            if ($LASTEXITCODE -ne 0) {
+              throw 'dotnet test failed.'
+            }
+          }
+          finally {
+            if ($scannerStarted) {
+              & dotnet sonarscanner end "/d:sonar.token=$env:SONAR_TOKEN"
+              if ($LASTEXITCODE -ne 0) {
+                throw 'SonarScanner end failed.'
+              }
+            }
+          }
+
+  qodana:
+    name: Qodana (optional)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+    env:
+      QODANA_TOKEN_PRESENT: ${{ secrets.QODANA_TOKEN != '' }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Skip reason (fork PR)
+        if: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.fork == true }}
+        run: |
+          echo "### Qodana" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Skipping Qodana: pull requests from forks do not receive repository secrets." >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Skip reason (token missing)
+        if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.fork == false) && env.QODANA_TOKEN_PRESENT != 'true' }}
+        run: |
+          echo "### Qodana" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Skipping Qodana: configure the QODANA_TOKEN secret to enable this job." >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Qodana scan (optional)
+        id: qodana_scan
+        if: ${{ env.QODANA_TOKEN_PRESENT == 'true' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.fork == false) }}
+        continue-on-error: true
+        uses: JetBrains/qodana-action@v2025.2
+        with:
+          upload-result: true
+        env:
+          QODANA_TOKEN: ${{ secrets.QODANA_TOKEN }}
+
+      - name: Qodana result (allowed failure)
+        if: ${{ always() && steps.qodana_scan.outcome == 'failure' }}
+        run: |
+          echo "### Qodana" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Qodana reported a workflow failure. Review the uploaded results before tightening this gate." >> "$GITHUB_STEP_SUMMARY"

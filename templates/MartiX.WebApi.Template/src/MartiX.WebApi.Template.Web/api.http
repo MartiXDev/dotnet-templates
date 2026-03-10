@@ -1,0 +1,56 @@
+@MartiXWebApiTemplate_HostAddress = https://localhost:57379
+
+@MartiXWebApiTemplate_CartId = 68fe4cfd-84bb-4b8a-bb4e-528c26325c72
+
+### List Products
+GET {{MartiXWebApiTemplate_HostAddress}}/products
+Accept: application/json
+
+### Get Product By ID
+GET {{MartiXWebApiTemplate_HostAddress}}/products/1
+Accept: application/json
+
+### Create Product
+POST {{MartiXWebApiTemplate_HostAddress}}/products
+Content-Type: application/json
+
+{
+  "name": "New Product",
+  "unitPrice": 29.99
+}
+
+### Add to Cart (Anonymous User - creates cart)
+POST {{MartiXWebApiTemplate_HostAddress}}/cart
+Content-Type: application/json
+
+{
+  "productId": 1,
+  "quantity": 2
+}
+
+### Add to Cart (Anonymous User - existing cart)
+POST {{MartiXWebApiTemplate_HostAddress}}/cart
+Content-Type: application/json
+
+{
+  "cartId": "{{MartiXWebApiTemplate_CartId}}",
+  "productId": 2,
+  "quantity": 3
+}
+
+### View Cart
+GET {{MartiXWebApiTemplate_HostAddress}}/cart/{{MartiXWebApiTemplate_CartId}}
+Accept: application/json
+
+### Checkout
+POST {{MartiXWebApiTemplate_HostAddress}}/cart/{{MartiXWebApiTemplate_CartId}}/checkout
+Content-Type: application/json
+
+{
+  "email": "guest@example.com"
+}
+### Note: Get order ID from response for future use
+
+
+
+
