@@ -43,6 +43,8 @@ public class Result
 
 public sealed class Result<TValue> : Result
 {
+  private readonly TValue? _value;
+
   internal Result(
     TValue value,
     ResultStatus status,
@@ -50,10 +52,12 @@ public sealed class Result<TValue> : Result
     IEnumerable<ValidationError>? validationErrors = null)
     : base(status, errors, validationErrors)
   {
-    Value = value;
+    _value = value;
   }
 
-  public TValue Value { get; }
+  public TValue Value => Status == ResultStatus.Ok
+    ? _value!
+    : throw new InvalidOperationException($"Result value is not available when status is '{Status}'.");
 
   public static Result<TValue> Success(TValue value) => new(value, ResultStatus.Ok);
 

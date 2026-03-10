@@ -1,4 +1,3 @@
-using System.Diagnostics.CodeAnalysis;
 using MartiX.WebApi.Results;
 
 namespace MartiX.WebApi.SharedKernel;
@@ -21,8 +20,7 @@ public abstract class HasDomainEventsBase
 
 public abstract class EntityBase<TEntity, TId> : HasDomainEventsBase
 {
-  [AllowNull]
-  public TId Id { get; protected set; }
+  public TId Id { get; protected set; } = default!;
 }
 
 public interface IReadRepository<T>
