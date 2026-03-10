@@ -1,3 +1,4 @@
+using MartiX.WebApi.Template.Web.Feature.Cart;
 using MartiX.WebApi.Template.Web.Feature.Cart.AddToCart;
 using Mediator;
 using Microsoft.AspNetCore.Http.HttpResults;
@@ -14,7 +15,7 @@ public class AddToCartEndpointTUnitTests
     AddToCartCommand? captured = null;
     var requestCartId = Guid.NewGuid();
     mediator.Send(Arg.Do<AddToCartCommand>(command => captured = command), Arg.Any<CancellationToken>())
-      .Returns(MartiX.WebApi.Results.Result.NotFound("missing"));
+      .Returns(MartiX.WebApi.Results.Result<CartDto>.NotFound("missing"));
 
     var endpoint = new AddToCartEndpoint(mediator);
     var response = await endpoint.ExecuteAsync(new AddToCartRequest
@@ -36,7 +37,7 @@ public class AddToCartEndpointTUnitTests
   {
     var mediator = Substitute.For<IMediator>();
     mediator.Send(Arg.Any<AddToCartCommand>(), Arg.Any<CancellationToken>())
-      .Returns(MartiX.WebApi.Results.Result.Invalid(new MartiX.WebApi.Results.ValidationError("Cannot add to cart")));
+      .Returns(MartiX.WebApi.Results.Result<CartDto>.Invalid(new MartiX.WebApi.Results.ValidationError("Cannot add to cart")));
     var endpoint = new AddToCartEndpoint(mediator);
 
     var response = await endpoint.ExecuteAsync(new AddToCartRequest { ProductId = 1, Quantity = 1 }, CancellationToken.None);
@@ -44,4 +45,3 @@ public class AddToCartEndpointTUnitTests
     await Assert.That(response.Result is not ProblemHttpResult).IsFalse();
   }
 }
-

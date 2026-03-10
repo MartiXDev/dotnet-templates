@@ -15,7 +15,7 @@ public class CheckoutEndpointTUnitTests
     CheckoutCommand? captured = null;
     var cartId = Guid.NewGuid();
     mediator.Send(Arg.Do<CheckoutCommand>(command => captured = command), Arg.Any<CancellationToken>())
-      .Returns(MartiX.WebApi.Results.Result.Invalid(new MartiX.WebApi.Results.ValidationError("Cart is empty")));
+      .Returns(MartiX.WebApi.Results.Result<CheckoutResult>.Invalid(new MartiX.WebApi.Results.ValidationError("Cart is empty")));
 
     var endpoint = new CheckoutEndpoint(mediator);
     var response = await endpoint.ExecuteAsync(new CheckoutRequest { CartId = cartId, Email = "guest@test.dev" }, CancellationToken.None);
@@ -26,4 +26,3 @@ public class CheckoutEndpointTUnitTests
     await Assert.That(response.Result is not ValidationProblem).IsFalse();
   }
 }
-

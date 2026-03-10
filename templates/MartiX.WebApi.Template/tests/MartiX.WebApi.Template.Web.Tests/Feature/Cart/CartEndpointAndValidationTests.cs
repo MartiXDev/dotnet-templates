@@ -64,7 +64,7 @@ public class CartEndpointAndValidationTests
   {
     var mediator = Substitute.For<IMediator>();
     mediator.Send(Arg.Any<AddToCartCommand>(), Arg.Any<CancellationToken>())
-      .Returns(Result.NotFound("missing"));
+      .Returns(Result<CartDto>.NotFound("missing"));
     var endpoint = new AddToCartEndpoint(mediator);
     var response = await endpoint.ExecuteAsync(
       new AddToCartRequest { ProductId = 999, Quantity = 1 },
@@ -78,7 +78,7 @@ public class CartEndpointAndValidationTests
   {
     var mediator = Substitute.For<IMediator>();
     mediator.Send(Arg.Any<CheckoutCommand>(), Arg.Any<CancellationToken>())
-      .Returns(Result.Invalid(new ValidationError("Cart is empty")));
+      .Returns(Result<CheckoutResult>.Invalid(new MartiX.WebApi.Results.ValidationError("Cart is empty")));
     var endpoint = new CheckoutEndpoint(mediator);
     var response = await endpoint.ExecuteAsync(
       new CheckoutRequest { CartId = Guid.NewGuid(), Email = "guest@test.dev" },
@@ -93,4 +93,3 @@ public class CartEndpointAndValidationTests
       new List<CartItemDto> { new(1, 2, 3m, 6m) },
       6m);
 }
-

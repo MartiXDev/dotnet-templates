@@ -14,7 +14,7 @@ public class GetCartHandler(IReadRepository<Domain.CartAggregate.Cart> repositor
 
     if (cart == null)
     {
-      return Result.NotFound("Cart not found");
+      return Result<CartDto>.NotFound("Cart not found");
     }
 
     // Map to DTO
@@ -30,4 +30,3 @@ public class GetCartHandler(IReadRepository<Domain.CartAggregate.Cart> repositor
     return new CartDto(cart.Id, items, total);
   }
 }
-
