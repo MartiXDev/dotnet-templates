@@ -61,7 +61,7 @@ function Assert-FileExists {
     throw "Expected file '$RelativePath' was not found under '$projectRoot'."
   }
 
-  return (Get-Item -LiteralPath $fullPath).FullName
+  return (Get-Item -LiteralPath $fullPath -Force).FullName
 }
 
 function Assert-DirectoryExists {
@@ -386,6 +386,14 @@ function Invoke-ScaffoldFlows {
   }
 
   Assert-CommandAvailable -CommandName 'bash' -Description 'Generated shell scaffold validation'
+  Assert-CommandAvailable -CommandName 'chmod' -Description 'Generated shell scaffold validation'
+
+  Invoke-ExternalCommand -FilePath 'chmod' -Arguments @(
+    '+x',
+    (Assert-FileExists 'scripts/bootstrap.sh'),
+    (Assert-FileExists 'scripts/scaffold.sh'),
+    (Assert-FileExists 'scripts/update.sh')
+  ) -Description 'Make generated shell entrypoints executable'
 
   Invoke-ExternalCommand -FilePath 'bash' -Arguments @((Assert-FileExists 'scripts/bootstrap.sh')) -Description 'Run scripts/bootstrap.sh'
   Invoke-ExternalCommand -FilePath 'bash' -Arguments @((Assert-FileExists 'scripts/scaffold.sh'), 'verify') -Description 'Run scripts/scaffold.sh verify after bootstrap'
