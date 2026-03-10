@@ -1,0 +1,108 @@
+name: Template validation
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+      - master
+
+jobs:
+  validate:
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - ubuntu-latest
+          - windows-latest
+        variant:
+          - default
+          - no-frontend
+          - api-only
+        include:
+          - variant: default
+            sample_name: SampleApp
+            template_args: ''
+          - variant: no-frontend
+            sample_name: SampleAppNoFrontend
+            template_args: '--frontend none'
+          - variant: api-only
+            sample_name: SampleAppApiOnly
+            template_args: '--orchestrator none'
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Build template pack project
+        run: dotnet build .\MartiX.Dotnet.Templates.csproj -nologo
+        shell: pwsh
+
+      - name: Pack template
+        run: dotnet pack .\MartiX.Dotnet.Templates.csproj -o .\bin\Release -nologo
+        shell: pwsh
+
+      - name: Refresh and validate generated default sample with PowerShell
+        if: runner.os == 'Windows' && matrix.variant == 'default'
+        run: .\scripts\refresh-generated-assets.ps1 -SampleName SampleApp -OutputRoot bin\generated-assets
+        shell: pwsh
+
+      - name: Make shell scripts executable
+        if: runner.os != 'Windows'
+        run: chmod +x ./scripts/*.sh
+
+      - name: Refresh and validate generated default sample with shell
+        if: runner.os != 'Windows' && matrix.variant == 'default'
+        run: ./scripts/refresh-generated-assets.sh --sample-name SampleApp --output-root bin/generated-assets
+
+      - name: Scaffold and validate generated reduced variants
+        if: matrix.variant != 'default'
+        shell: pwsh
+        run: |
+          $repoRoot = (Get-Location).Path
+          $sampleName = '${{ matrix.sample_name }}'
+          $samplePath = Join-Path $repoRoot (Join-Path 'bin/generated-assets' $sampleName)
+          $templateArgsText = '${{ matrix.template_args }}'
+          $templateArgs = @()
+
+          if (Test-Path $samplePath) {
+            Remove-Item -Recurse -Force $samplePath
+          }
+
+          if (-not [string]::IsNullOrWhiteSpace($templateArgsText)) {
+            $templateArgs = $templateArgsText.Split(' ', [System.StringSplitOptions]::RemoveEmptyEntries)
+          }
+
+          $hiveRoot = Join-Path $env:RUNNER_TEMP ('martix-template-hive-' + [Guid]::NewGuid().ToString('N'))
+          try {
+            New-Item -ItemType Directory -Path $hiveRoot -Force | Out-Null
+
+            dotnet new install $repoRoot --debug:custom-hive $hiveRoot
+            if ($LASTEXITCODE -ne 0) {
+              throw 'Failed to install the local template into the isolated hive.'
+            }
+
+            dotnet new martix-webapi -n $sampleName -o $samplePath @templateArgs --force --debug:custom-hive $hiveRoot
+            if ($LASTEXITCODE -ne 0) {
+              throw "Failed to scaffold the '${{ matrix.variant }}' template variant."
+            }
+
+            .\scripts\validate-generated-repo.ps1 -ProjectRoot $samplePath -ScaffoldVariant '${{ matrix.variant }}'
+          }
+          finally {
+            if (Test-Path $hiveRoot) {
+              Remove-Item -Recurse -Force $hiveRoot
+            }
+          }

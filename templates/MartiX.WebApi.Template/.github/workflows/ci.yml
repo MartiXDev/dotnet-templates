@@ -1,0 +1,134 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+      - master
+  pull_request:
+
+jobs:
+  build-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Resolve solution file
+        id: solution
+        shell: bash
+        run: |
+          solution=$(find . -maxdepth 1 \( -name '*.slnx' -o -name '*.sln' \) | head -n 1)
+          if [ -z "$solution" ]; then
+            echo "No solution file was found at the repository root." >&2
+            exit 1
+          fi
+          echo "solution=$solution" >> "$GITHUB_OUTPUT"
+
+      - name: Restore
+        run: dotnet restore "${{ steps.solution.outputs.solution }}"
+
+      - name: Verify formatting
+        run: dotnet format whitespace "${{ steps.solution.outputs.solution }}" --verify-no-changes --no-restore
+
+      - name: Lint Markdown
+        run: npx --yes markdownlint-cli2 "README.md" "CONTRIBUTING.md" "docs/SETUP.md" "docs/RELEASE.md" "docs/TROUBLESHOOTING.md" "docs/SCAFFOLDING.md" ".github/pull_request_template.md"
+
+      - name: Validate PowerShell scripts
+        shell: pwsh
+        run: |
+          $scripts = Get-ChildItem -Path .\scripts -Filter *.ps1 -File -Recurse -ErrorAction SilentlyContinue
+
+          if (@($scripts).Count -eq 0) {
+            Write-Host 'No PowerShell scripts were found under .\scripts to validate.'
+            exit 0
+          }
+
+          $parseErrors = foreach ($script in $scripts) {
+            $tokens = $null
+            $errors = $null
+            [System.Management.Automation.Language.Parser]::ParseFile($script.FullName, [ref] $tokens, [ref] $errors) | Out-Null
+
+            foreach ($error in $errors) {
+              [pscustomobject]@{
+                File = $script.FullName
+                Line = $error.Extent.StartLineNumber
+                Column = $error.Extent.StartColumnNumber
+                Message = $error.Message
+              }
+            }
+          }
+
+          if (@($parseErrors).Count -gt 0) {
+            $parseErrors | Format-Table -AutoSize | Out-String | Write-Host
+            throw 'PowerShell script validation failed.'
+          }
+
+          Write-Host "Validated $(@($scripts).Count) PowerShell script(s)."
+
+      - name: Build (warnings as errors)
+        run: dotnet build "${{ steps.solution.outputs.solution }}" --no-restore --configuration Release -p:TreatWarningsAsErrors=true
+
+      - name: Test
+        run: dotnet test --solution "${{ steps.solution.outputs.solution }}" --no-build --configuration Release --results-directory ./.artifacts/test-results --coverage --coverage-output-format cobertura --report-trx
+
+      - name: Generate coverage report
+        if: always()
+        shell: pwsh
+        run: |
+          $repoRoot = (Resolve-Path '.').Path
+          $artifactsRoot = Join-Path $repoRoot '.artifacts'
+          $testResultsPath = Join-Path $artifactsRoot 'test-results'
+          $coverageFiles = Get-ChildItem -Path $testResultsPath -Filter '*.cobertura.xml' -File -Recurse -ErrorAction SilentlyContinue
+
+          if (@($coverageFiles).Count -eq 0) {
+            Write-Warning "No *.cobertura.xml files were found under '$testResultsPath'."
+            exit 0
+          }
+
+          $toolPath = Join-Path $artifactsRoot 'tools'
+          $reportPath = Join-Path $artifactsRoot 'coverage-report'
+          New-Item -ItemType Directory -Path $toolPath -Force | Out-Null
+
+          dotnet tool install dotnet-reportgenerator-globaltool --tool-path $toolPath --version 5.*
+          if ($LASTEXITCODE -ne 0) {
+            throw 'Failed to install ReportGenerator.'
+          }
+
+          $reportGenerator = Join-Path $toolPath 'reportgenerator'
+          if (-not (Test-Path $reportGenerator)) {
+            $reportGenerator = Join-Path $toolPath 'reportgenerator.exe'
+          }
+
+          $reports = ($coverageFiles | ForEach-Object FullName) -join ';'
+          & $reportGenerator "-reports:$reports" "-targetdir:$reportPath" '-reporttypes:Html;Cobertura'
+          if ($LASTEXITCODE -ne 0) {
+            throw 'Coverage report generation failed.'
+          }
+
+      - name: Upload test artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: ./.artifacts/test-results
+          if-no-files-found: warn
+
+      - name: Upload coverage artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: ./.artifacts/coverage-report
+          if-no-files-found: warn

@@ -1,0 +1,275 @@
+{
+  "schemaVersion": 1,
+  "assets": [
+    {
+      "id": "root-readme",
+      "description": "Creates the generated repository README with first-run guidance.",
+      "source": "templates/README.md.tmpl",
+      "target": "README.md",
+      "mode": "template",
+      "lineEndings": "lf"
+    },
+    {
+      "id": "editorconfig",
+      "description": "Creates the root EditorConfig with shared formatting and analyzer defaults.",
+      "source": "templates/.editorconfig.tmpl",
+      "target": ".editorconfig",
+      "mode": "template",
+      "lineEndings": "lf"
+    },
+    {
+      "id": "directory-build-props",
+      "description": "Creates shared MSBuild and analyzer defaults for the generated repository.",
+      "source": "templates/Directory.Build.props.tmpl",
+      "target": "Directory.Build.props",
+      "mode": "template",
+      "lineEndings": "lf"
+    },
+    {
+      "id": "markdownlint-config",
+      "description": "Creates shared Markdown lint defaults for the generated repository.",
+      "source": "templates/.markdownlint-cli2.jsonc.tmpl",
+      "target": ".markdownlint-cli2.jsonc",
+      "mode": "template",
+      "lineEndings": "lf"
+    },
+    {
+      "id": "scaffold-architecture-doc",
+      "description": "Documents the scaffold-managed asset architecture inside generated repositories.",
+      "source": "templates/docs/SCAFFOLDING.md.tmpl",
+      "target": "docs/SCAFFOLDING.md",
+      "mode": "template",
+      "lineEndings": "lf"
+    },
+    {
+      "id": "setup-doc",
+      "description": "Creates the generated repository setup guide.",
+      "source": "templates/docs/SETUP.md.tmpl",
+      "target": "docs/SETUP.md",
+      "mode": "template",
+      "lineEndings": "lf"
+    },
+    {
+      "id": "troubleshooting-doc",
+      "description": "Creates the generated repository troubleshooting guide.",
+      "source": "templates/docs/TROUBLESHOOTING.md.tmpl",
+      "target": "docs/TROUBLESHOOTING.md",
+      "mode": "template",
+      "lineEndings": "lf"
+    },
+    {
+      "id": "ai-skills-doc",
+      "description": "Creates the generated repository AI bootstrap and skill recommendations guide.",
+      "source": "templates/docs/AI-SKILLS.md.tmpl",
+      "target": "docs/AI-SKILLS.md",
+      "mode": "template",
+      "lineEndings": "lf"
+    },
+    {
+      "id": "copilot-mcp-config",
+      "description": "Creates the generated repository GitHub MCP configuration for Copilot.",
+      "source": "templates/.copilot/mcp-config.json",
+      "target": ".copilot/mcp-config.json",
+      "mode": "copy",
+      "lineEndings": "lf"
+    },
+    {
+      "id": "github-copilot-instructions",
+      "description": "Creates the generated repository Copilot instructions file.",
+      "source": "templates/.github/copilot-instructions.md.tmpl",
+      "target": ".github/copilot-instructions.md",
+      "mode": "template",
+      "lineEndings": "lf"
+    },
+    {
+      "id": "ai-setup-script",
+      "description": "Creates the generated repository opt-in PowerShell helper for MartiX AI setup.",
+      "source": "templates/scripts/setup-ai.ps1",
+      "target": "scripts/setup-ai.ps1",
+      "mode": "copy",
+      "lineEndings": "crlf"
+    },
+    {
+      "id": "contributing-guide",
+      "description": "Creates the generated repository contributing and commit guidance.",
+      "source": "templates/CONTRIBUTING.md.tmpl",
+      "target": "CONTRIBUTING.md",
+      "mode": "template",
+      "lineEndings": "lf"
+    },
+    {
+      "id": "release-doc",
+      "description": "Creates the generated repository release and governance guide.",
+      "source": "templates/docs/RELEASE.md.tmpl",
+      "target": "docs/RELEASE.md",
+      "mode": "template",
+      "lineEndings": "lf"
+    },
+    {
+      "id": "release-please-config",
+      "description": "Creates the generated repository Release Please configuration.",
+      "source": "templates/release-please-config.json.tmpl",
+      "target": "release-please-config.json",
+      "mode": "template",
+      "lineEndings": "lf"
+    },
+    {
+      "id": "qodana-config",
+      "description": "Creates the generated repository optional Qodana configuration.",
+      "source": "templates/qodana.yaml.tmpl",
+      "target": "qodana.yaml",
+      "mode": "template",
+      "lineEndings": "lf"
+    },
+    {
+      "id": "sonar-config",
+      "description": "Creates the generated repository optional Sonar analysis defaults.",
+      "source": "templates/sonar-project.properties.tmpl",
+      "target": "sonar-project.properties",
+      "mode": "template",
+      "lineEndings": "lf"
+    },
+    {
+      "id": "github-ci-workflow",
+      "description": "Creates the generated repository CI workflow.",
+      "source": "templates/.github/workflows/ci.yml.tmpl",
+      "target": ".github/workflows/ci.yml",
+      "mode": "template",
+      "lineEndings": "lf"
+    },
+    {
+      "id": "github-release-please-workflow",
+      "description": "Creates the generated repository release workflow.",
+      "source": "templates/.github/workflows/release-please.yml.tmpl",
+      "target": ".github/workflows/release-please.yml",
+      "mode": "template",
+      "lineEndings": "lf"
+    },
+    {
+      "id": "github-conventional-commits-workflow",
+      "description": "Creates the generated repository conventional commit enforcement workflow.",
+      "source": "templates/.github/workflows/conventional-commits.yml.tmpl",
+      "target": ".github/workflows/conventional-commits.yml",
+      "mode": "template",
+      "lineEndings": "lf"
+    },
+    {
+      "id": "github-quality-analysis-workflow",
+      "description": "Creates the generated repository optional static analysis workflow.",
+      "source": "templates/.github/workflows/quality-analysis.yml.tmpl",
+      "target": ".github/workflows/quality-analysis.yml",
+      "mode": "template",
+      "lineEndings": "lf"
+    },
+    {
+      "id": "github-dependabot",
+      "description": "Creates the generated repository Dependabot configuration.",
+      "source": "templates/.github/dependabot.yml.tmpl",
+      "target": ".github/dependabot.yml",
+      "mode": "template",
+      "lineEndings": "lf"
+    },
+    {
+      "id": "github-codeowners",
+      "description": "Creates the generated repository CODEOWNERS placeholder.",
+      "source": "templates/.github/CODEOWNERS.tmpl",
+      "target": ".github/CODEOWNERS",
+      "mode": "template",
+      "lineEndings": "lf"
+    },
+    {
+      "id": "github-pr-template",
+      "description": "Creates the generated repository pull request template.",
+      "source": "templates/.github/pull_request_template.md.tmpl",
+      "target": ".github/pull_request_template.md",
+      "mode": "template",
+      "lineEndings": "lf"
+    }
+  ],
+  "commands": {
+    "bootstrap": {
+      "description": "Materialize scaffold-managed repository assets for first-time setup.",
+      "include": [
+        "root-readme",
+        "editorconfig",
+        "directory-build-props",
+        "markdownlint-config",
+        "scaffold-architecture-doc",
+        "setup-doc",
+        "troubleshooting-doc",
+        "ai-skills-doc",
+        "copilot-mcp-config",
+        "github-copilot-instructions",
+        "ai-setup-script",
+        "contributing-guide",
+        "release-doc",
+        "release-please-config",
+        "qodana-config",
+        "sonar-config",
+        "github-ci-workflow",
+        "github-release-please-workflow",
+        "github-conventional-commits-workflow",
+        "github-quality-analysis-workflow",
+        "github-dependabot",
+        "github-codeowners",
+        "github-pr-template"
+      ]
+    },
+    "update": {
+      "description": "Refresh scaffold-managed repository assets from the shared source of truth.",
+      "include": [
+        "root-readme",
+        "editorconfig",
+        "directory-build-props",
+        "markdownlint-config",
+        "scaffold-architecture-doc",
+        "setup-doc",
+        "troubleshooting-doc",
+        "ai-skills-doc",
+        "copilot-mcp-config",
+        "github-copilot-instructions",
+        "ai-setup-script",
+        "contributing-guide",
+        "release-doc",
+        "release-please-config",
+        "qodana-config",
+        "sonar-config",
+        "github-ci-workflow",
+        "github-release-please-workflow",
+        "github-conventional-commits-workflow",
+        "github-quality-analysis-workflow",
+        "github-dependabot",
+        "github-codeowners",
+        "github-pr-template"
+      ]
+    },
+    "verify": {
+      "description": "Verify scaffold-managed repository assets are present and up to date.",
+      "include": [
+        "root-readme",
+        "editorconfig",
+        "directory-build-props",
+        "markdownlint-config",
+        "scaffold-architecture-doc",
+        "setup-doc",
+        "troubleshooting-doc",
+        "ai-skills-doc",
+        "copilot-mcp-config",
+        "github-copilot-instructions",
+        "ai-setup-script",
+        "contributing-guide",
+        "release-doc",
+        "release-please-config",
+        "qodana-config",
+        "sonar-config",
+        "github-ci-workflow",
+        "github-release-please-workflow",
+        "github-conventional-commits-workflow",
+        "github-quality-analysis-workflow",
+        "github-dependabot",
+        "github-codeowners",
+        "github-pr-template"
+      ]
+    }
+  }
+}

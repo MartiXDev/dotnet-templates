@@ -1,0 +1,137 @@
+{
+  "$schema": "http://json.schemastore.org/template",
+  "author": "MartiXDev",
+  "classifications": ["Web", "API", "Clean Architecture"],
+  "identity": "MartiX.WebApi.Template",
+  "name": "MartiX Web API Template",
+  "description": "A custom .NET 10+ / C# 14+ Web API solution template built on top of MartiX.WebApi.",
+  "shortName": "martix-webapi",
+  "sourceName": "MartiX.WebApi.Template",
+  "preferNameDirectory": true,
+  "tags": {
+    "language": "C#",
+    "type": "solution"
+  },
+  "symbols": {
+    "Framework": {
+      "type": "parameter",
+      "description": "The target framework for the project.",
+      "datatype": "choice",
+      "choices": [
+        {
+          "choice": "net10.0",
+          "description": ".NET 10"
+        }
+      ],
+      "defaultValue": "net10.0",
+      "replaces": "net10.0"
+    },
+    "frontend": {
+      "type": "parameter",
+      "description": "Select the optional frontend slice. The default keeps the Blazor frontend.",
+      "datatype": "choice",
+      "enableQuotelessLiterals": true,
+      "choices": [
+        {
+          "choice": "blazor",
+          "description": "Include the default Blazor frontend."
+        },
+        {
+          "choice": "none",
+          "description": "Omit the frontend and scaffold the API-only path."
+        }
+      ],
+      "defaultValue": "blazor"
+    },
+    "orchestrator": {
+      "type": "parameter",
+      "description": "Select the local orchestration experience. The default keeps the .NET Aspire AppHost.",
+      "datatype": "choice",
+      "enableQuotelessLiterals": true,
+      "choices": [
+        {
+          "choice": "aspire",
+          "description": "Include the default .NET Aspire AppHost."
+        },
+        {
+          "choice": "none",
+          "description": "Omit the AppHost and scaffold the direct API solution."
+        }
+      ],
+      "defaultValue": "aspire"
+    },
+    "UseAspire": {
+      "type": "computed",
+      "value": "(orchestrator == aspire)"
+    },
+    "UseBlazor": {
+      "type": "computed",
+      "value": "(UseAspire && frontend == blazor)"
+    }
+  },
+  "sources": [
+    {
+      "source": "./",
+      "target": "./",
+      "exclude": [
+        "**/[Bb]in/**",
+        "**/[Oo]bj/**",
+        ".template.config/**/*",
+        "**/*.filelist",
+        "**/*.user",
+        "**/*.lock.json",
+        "MartiX.WebApi.Template.slnx",
+        "MartiX.WebApi.Template.NoBlazor.slnx",
+        "MartiX.WebApi.Template.ApiOnly.slnx",
+        "src/MartiX.WebApi.Template.AspireHost/AppHost.cs",
+        "src/MartiX.WebApi.Template.AspireHost/AppHost.NoBlazor.cs",
+        "src/MartiX.WebApi.Template.AspireHost/MartiX.WebApi.Template.AspireHost.csproj",
+        "src/MartiX.WebApi.Template.AspireHost/MartiX.WebApi.Template.AspireHost.NoBlazor.csproj"
+      ],
+      "modifiers": [
+        {
+          "condition": "(!UseBlazor)",
+          "exclude": [
+            "src/MartiX.WebApi.Template.Blazor/**/*"
+          ]
+        },
+        {
+          "condition": "(!UseAspire)",
+          "exclude": [
+            "src/MartiX.WebApi.Template.AspireHost/**/*"
+          ]
+        }
+      ]
+    },
+    {
+      "condition": "(UseAspire && UseBlazor)",
+      "include": [
+        "MartiX.WebApi.Template.slnx",
+        "src/MartiX.WebApi.Template.AspireHost/AppHost.cs",
+        "src/MartiX.WebApi.Template.AspireHost/AppHost.NoBlazor.cs",
+        "src/MartiX.WebApi.Template.AspireHost/MartiX.WebApi.Template.AspireHost.csproj",
+        "src/MartiX.WebApi.Template.AspireHost/MartiX.WebApi.Template.AspireHost.NoBlazor.csproj"
+      ]
+    },
+    {
+      "condition": "(UseAspire && !UseBlazor)",
+      "include": [
+        "MartiX.WebApi.Template.NoBlazor.slnx",
+        "src/MartiX.WebApi.Template.AspireHost/AppHost.NoBlazor.cs",
+        "src/MartiX.WebApi.Template.AspireHost/MartiX.WebApi.Template.AspireHost.NoBlazor.csproj"
+      ],
+      "rename": {
+        "MartiX.WebApi.Template.NoBlazor.slnx": "MartiX.WebApi.Template.slnx"
+      }
+    },
+    {
+      "condition": "(!UseAspire)",
+      "include": [
+        "MartiX.WebApi.Template.ApiOnly.slnx"
+      ],
+      "rename": {
+        "MartiX.WebApi.Template.ApiOnly.slnx": "MartiX.WebApi.Template.slnx"
+      }
+    }
+  ]
+}

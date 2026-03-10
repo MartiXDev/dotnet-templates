@@ -1,0 +1,33 @@
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+indent_style = space
+indent_size = 2
+insert_final_newline = true
+trim_trailing_whitespace = true
+
+[*.md]
+trim_trailing_whitespace = false
+
+[*.{cs,csx}]
+dotnet_sort_system_directives_first = false
+dotnet_separate_import_directive_groups = false
+
+# Keep style guidance non-disruptive.
+dotnet_analyzer_diagnostic.category-Style.severity = suggestion
+dotnet_analyzer_diagnostic.category-Documentation.severity = suggestion
+
+# Keep key nullable diagnostics visible.
+dotnet_diagnostic.CS8600.severity = warning
+dotnet_diagnostic.CS8602.severity = warning
+dotnet_diagnostic.CS8603.severity = warning
+dotnet_diagnostic.CS8618.severity = warning
+dotnet_diagnostic.CS8625.severity = warning
+
+[*.{g.cs,generated.cs,designer.cs}]
+generated_code = true
+
+[*.{csproj,props,targets,json,jsonc,yml,yaml,xml}]
+indent_size = 2

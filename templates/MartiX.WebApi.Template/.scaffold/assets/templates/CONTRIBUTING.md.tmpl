@@ -1,0 +1,49 @@
+# Contributing to {{ProjectName}}
+
+## Pull request titles drive releases
+
+This repository uses Conventional Commits and validates pull request titles with
+`.github/workflows/conventional-commits.yml`.
+
+Use titles like:
+
+- `feat: add order export endpoint`
+- `fix(api): reject duplicate email addresses`
+- `docs: clarify local setup`
+- `refactor!: simplify the authentication pipeline`
+
+Use `!` or a `BREAKING CHANGE:` footer in the merged commit when a change should
+trigger a major version bump.
+
+## Preferred merge flow
+
+- Prefer **Squash and merge** so the pull request title becomes the commit that
+  lands on `main`.
+- In repository settings, turn on **Default to PR title for squash merge
+  commits**.
+- Keep the PR title stable once CI passes, because Release Please uses merged
+  commit history to calculate the next version and changelog.
+
+## Release automation
+
+- `.github/workflows/release-please.yml` watches `main` and `master`.
+- `release-please-config.json` defines the changelog sections and versioning
+  behavior.
+- `version.txt`, `CHANGELOG.md`, and `.release-please-manifest.json` are the
+  release-state files that evolve over time.
+- `docs/RELEASE.md` explains the full release flow plus the optional
+  static-analysis setup.
+
+## Local validation
+
+Run the same baseline checks as CI before opening a pull request:
+
+```powershell
+dotnet restore .\{{ProjectName}}.slnx
+dotnet format .\{{ProjectName}}.slnx --verify-no-changes --no-restore
+dotnet build .\{{ProjectName}}.slnx --no-restore --configuration Release -p:TreatWarningsAsErrors=true
+dotnet test .\{{ProjectName}}.slnx --no-build --configuration Release --collect:"XPlat Code Coverage" --results-directory .\.artifacts\test-results
+```
+
+See [`docs/SETUP.md`](docs/SETUP.md) for the complete day-to-day setup and
+validation guidance.

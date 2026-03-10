@@ -1,0 +1,10 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/MartiX.WebApi.Template.AspireHost/MartiX.WebApi.Template.AspireHost.NoBlazor.csproj" />
+    <Project Path="src/MartiX.WebApi.Template.ServiceDefaults/MartiX.WebApi.Template.ServiceDefaults.csproj" />
+    <Project Path="src/MartiX.WebApi.Template.Web/MartiX.WebApi.Template.Web.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/MartiX.WebApi.Template.Web.Tests/MartiX.WebApi.Template.Web.Tests.csproj" />
+  </Folder>
+</Solution>
