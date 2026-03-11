@@ -23,13 +23,13 @@ public class ResultExtensionsTUnitTests
   [Test]
   public async Task ResultExtensionMappings_WhenInvalidAndFailure_MapsProblemBranches()
   {
-    Result<int> invalid = Result.Invalid(new ValidationError("Invalid field"));
-    Result<int> notFound = Result.NotFound("Missing");
+    Result<int> invalid = Result<int>.Invalid(new MartiX.WebApi.Results.ValidationError("Invalid field"));
+    Result<int> notFound = Result<int>.NotFound("Missing");
     var createdInvalid = invalid.ToCreatedResult(v => $"/Products/{v}", v => new ProductRecord(v, "P", 1m));
     var createdProblem = notFound.ToCreatedResult(v => $"/Products/{v}", v => new ProductRecord(v, "P", 1m));
     var getByIdInvalid = invalid.ToGetByIdResult(v => new ProductRecord(v, "P", 1m));
     var updateNotFound = notFound.ToUpdateResult(v => new ProductRecord(v, "P", 1m));
-    var deleteProblem = Result.Invalid(new ValidationError("Delete failed")).ToDeleteResult();
+    var deleteProblem = Result.Invalid(new MartiX.WebApi.Results.ValidationError("Delete failed")).ToDeleteResult();
     var okOnly = Result.Success(13).ToOkOnlyResult(v => new ProductRecord(v, "OK", 2m));
 
     await Assert.That(createdInvalid.Result is not ValidationProblem).IsFalse();
@@ -40,4 +40,3 @@ public class ResultExtensionsTUnitTests
     await Assert.That(okOnly.Value is null || okOnly.Value.Id != 13).IsFalse();
   }
 }
-

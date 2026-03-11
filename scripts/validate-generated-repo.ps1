@@ -204,6 +204,25 @@ function Assert-FileContainsText {
   }
 }
 
+function Assert-FileDoesNotContainText {
+  param(
+    [Parameter(Mandatory = $true)]
+    [string] $RelativePath,
+
+    [Parameter(Mandatory = $true)]
+    [string[]] $ForbiddenText
+  )
+
+  $fullPath = Assert-FileExists $RelativePath
+  $content = Get-Content -LiteralPath $fullPath -Raw
+
+  foreach ($text in $ForbiddenText) {
+    if ($content -match [regex]::Escape($text)) {
+      throw "Did not expect file '$RelativePath' to contain '$text'."
+    }
+  }
+}
+
 function Test-KnownDotNetTestLimitation {
   param(
     [Parameter(Mandatory = $true)]
@@ -341,6 +360,14 @@ function Validate-VariantProjectShape {
   foreach ($relativePath in $forbiddenPaths) {
     Assert-PathMissing $relativePath
   }
+
+  Assert-FileDoesNotContainText -RelativePath 'Directory.Packages.props' -ForbiddenText @(
+    '<PackageVersion Include="MartiX.WebApi"'
+  )
+
+  Assert-FileDoesNotContainText -RelativePath "src\$solutionName.Web\$solutionName.Web.csproj" -ForbiddenText @(
+    '<PackageReference Include="MartiX.WebApi"'
+  )
 }
 
 function Validate-PreBootstrapState {

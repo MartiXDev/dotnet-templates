@@ -23,8 +23,8 @@ public class CheckoutHandler(
     var cartSpec = new CartByIdSpec(request.CartId);
     var cart = await cartRepository.FirstOrDefaultAsync(cartSpec, cancellationToken);
 
-    if (cart == null) return Result.NotFound("Cart not found");
-    if (!cart.Items.Any()) return Result.Invalid(new ValidationError("Cart is empty"));
+    if (cart == null) return Result<CheckoutResult>.NotFound("Cart not found");
+    if (!cart.Items.Any()) return Result<CheckoutResult>.Invalid(new MartiX.WebApi.Results.ValidationError("Cart is empty"));
 
     // Get or create guest user
     var guestUserSpec = new GuestUserByEmailSpec(request.Email);
@@ -58,4 +58,3 @@ public class CheckoutHandler(
     return new CheckoutResult(order.Id);
   }
 }
-

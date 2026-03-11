@@ -13,9 +13,8 @@ public class GetProductHandler(IReadRepository<ProductEntity> _repository)
   {
     var spec = new ProductByIdSpec(request.ProductId);
     var entity = await _repository.FirstOrDefaultAsync(spec, cancellationToken);
-    if (entity == null) return Result.NotFound();
+    if (entity == null) return Result<ProductDto>.NotFound();
 
     return new ProductDto(entity.Id, entity.Name, entity.UnitPrice);
   }
 }
-

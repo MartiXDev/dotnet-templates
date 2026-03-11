@@ -21,7 +21,7 @@ public class AddToCartHandler(
     var product = await productRepository.FirstOrDefaultAsync(productSpec, cancellationToken);
     if (product == null)
     {
-      return Result.NotFound("Product not found");
+      return Result<CartDto>.NotFound("Product not found");
     }
 
     // Get or create cart
@@ -32,7 +32,7 @@ public class AddToCartHandler(
       var existingCart = await cartRepository.FirstOrDefaultAsync(cartSpec, cancellationToken);
       if (existingCart == null)
       {
-        return Result.NotFound("Cart not found");
+        return Result<CartDto>.NotFound("Cart not found");
       }
       cart = existingCart;
     }
@@ -62,4 +62,3 @@ public class AddToCartHandler(
     return new CartDto(cart.Id, items, total);
   }
 }
-
