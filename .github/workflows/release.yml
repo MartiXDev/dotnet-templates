@@ -1,0 +1,167 @@
+name: Release
+
+on:
+  push:
+    branches:
+      - main
+      - master
+  workflow_dispatch:
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  release-please:
+    name: Release Please
+    runs-on: ubuntu-latest
+    outputs:
+      release_created: ${{ steps.release.outputs.release_created }}
+      tag_name: ${{ steps.release.outputs.tag_name }}
+      version: ${{ steps.release.outputs.version }}
+      sha: ${{ steps.release.outputs.sha }}
+    permissions:
+      contents: write
+      issues: write
+      pull-requests: write
+    steps:
+      - name: Validate workflow_dispatch branch
+        if: ${{ github.event_name == 'workflow_dispatch' && (github.ref_type != 'branch' || (github.ref_name != 'main' && github.ref_name != 'master')) }}
+        run: |
+          echo "Manual release runs are only supported from the main or master branches." >&2
+          exit 1
+
+      - name: Release Please
+        id: release
+        uses: googleapis/release-please-action@v4
+        with:
+          token: ${{ secrets.RELEASE_PLEASE_TOKEN != '' && secrets.RELEASE_PLEASE_TOKEN || github.token }}
+          target-branch: ${{ github.ref_name }}
+          config-file: release-please-config.json
+          manifest-file: .release-please-manifest.json
+
+  prepare-package:
+    name: Prepare NuGet package
+    runs-on: ubuntu-latest
+    needs: release-please
+    if: ${{ needs.release-please.outputs.release_created == 'true' }}
+    environment: release
+    permissions:
+      contents: read
+      id-token: write
+    env:
+      DOTNET_NOLOGO: true
+      DOTNET_CLI_TELEMETRY_OPTOUT: true
+    steps:
+      - name: Checkout release tag
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+          ref: ${{ needs.release-please.outputs.tag_name }}
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: |
+            10.0.x
+
+      - name: Restore template pack project
+        run: dotnet restore .\MartiX.Dotnet.Templates.csproj -nologo
+        shell: pwsh
+
+      - name: Build template pack project
+        run: dotnet build .\MartiX.Dotnet.Templates.csproj -c Release --no-restore -nologo
+        shell: pwsh
+
+      - name: Test template pack project
+        run: dotnet test .\MartiX.Dotnet.Templates.csproj -c Release --no-build -nologo
+        shell: pwsh
+
+      - name: Pack template package
+        run: dotnet pack .\MartiX.Dotnet.Templates.csproj -c Release --no-build -o .\artifacts\packages -nologo
+        shell: pwsh
+
+      - name: Upload package artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: MartiX.Dotnet.Templates.${{ needs.release-please.outputs.version }}
+          path: artifacts/packages/*.nupkg
+          if-no-files-found: error
+
+      - name: Validate Trusted Publishing configuration
+        shell: pwsh
+        env:
+          NUGET_USER: ${{ vars.NUGET_USER }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+
+          if ([string]::IsNullOrWhiteSpace($env:NUGET_USER)) {
+              throw "NUGET_USER is not configured.`nSet it as a GitHub variable for the release environment or repository before running a full release."
+          }
+
+      - name: Exchange GitHub OIDC token for NuGet API key
+        id: nuget_login
+        shell: pwsh
+        env:
+          NUGET_USER: ${{ vars.NUGET_USER }}
+          NUGET_AUDIENCE: https://www.nuget.org
+          NUGET_TOKEN_SERVICE_URL: https://www.nuget.org/api/v2/token
+        run: |
+          $ErrorActionPreference = 'Stop'
+
+          if (-not $env:ACTIONS_ID_TOKEN_REQUEST_TOKEN -or -not $env:ACTIONS_ID_TOKEN_REQUEST_URL) {
+              throw 'Missing GitHub OIDC request environment variables.'
+          }
+
+          Write-Output "::add-mask::$($env:ACTIONS_ID_TOKEN_REQUEST_TOKEN)"
+
+          $tokenUrl = "$($env:ACTIONS_ID_TOKEN_REQUEST_URL)&audience=$([uri]::EscapeDataString($env:NUGET_AUDIENCE))"
+          $oidcResponse = Invoke-RestMethod -Uri $tokenUrl -Headers @{
+              Authorization = "Bearer $($env:ACTIONS_ID_TOKEN_REQUEST_TOKEN)"
+          }
+
+          if (-not $oidcResponse.value) {
+              throw 'Failed to retrieve OIDC token from GitHub.'
+          }
+
+          $oidcToken = [string]$oidcResponse.value
+          Write-Output "::add-mask::$oidcToken"
+
+          $exchangeBody = @{
+              username  = $env:NUGET_USER
+              tokenType = 'ApiKey'
+          } | ConvertTo-Json -Compress
+
+          $exchangeResponse = Invoke-WebRequest -Method Post -Uri $env:NUGET_TOKEN_SERVICE_URL -Headers @{
+              Authorization = "Bearer $oidcToken"
+              'User-Agent'  = 'martix-dotnet-templates-release-workflow'
+          } -ContentType 'application/json' -Body $exchangeBody -SkipHttpErrorCheck
+
+          if ($exchangeResponse.StatusCode -ne 200) {
+              throw "Token exchange failed ($($exchangeResponse.StatusCode)): $($exchangeResponse.Content)"
+          }
+
+          $exchangeData = $exchangeResponse.Content | ConvertFrom-Json
+
+          if (-not $exchangeData.apiKey) {
+              throw 'Response did not contain "apiKey".'
+          }
+
+          $apiKey = [string]$exchangeData.apiKey
+          Write-Output "::add-mask::$apiKey"
+          "NUGET_API_KEY=$apiKey" >> $env:GITHUB_OUTPUT
+
+      - name: Publish package to NuGet
+        shell: pwsh
+        env:
+          NUGET_API_KEY: ${{ steps.nuget_login.outputs.NUGET_API_KEY }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+
+          dotnet nuget push ".\artifacts\packages\*.nupkg" `
+            --source https://api.nuget.org/v3/index.json `
+            --api-key $env:NUGET_API_KEY `
+            --skip-duplicate

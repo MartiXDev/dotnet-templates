@@ -15,6 +15,8 @@ This document intentionally distinguishes between:
 - **Current implementation**: what a maintainer or consumer gets from the repository today.
 - **Intended automation model**: the documented target architecture for future scaffold/bootstrap automation.
 
+Boundary note: the release and governance files described below are part of the scaffolded generated-repository contract. They do not double as the root `dotnet-templates` repository's own release state or publish workflow for `MartiX.Dotnet.Templates`. The root pack instead uses the repository-level `release-please-config.json`, `.release-please-manifest.json`, `version.txt`, `CHANGELOG.md`, and `.github\workflows\release.yml`.
+
 ## Current implementation: what the template generates today
 
 Running `dotnet new martix-webapi -n MyProject` currently generates a solution-style repository with these root assets:
@@ -25,9 +27,9 @@ Running `dotnet new martix-webapi -n MyProject` currently generates a solution-s
 | `Directory.Packages.props` | Central package version management across all generated projects. | `templates\MartiX.WebApi.Template\Directory.Packages.props` |
 | `README.md` | First-run, local development, and governance overview for the generated repository. | `templates\MartiX.WebApi.Template\.scaffold\assets\templates\README.md.tmpl` via `scripts\bootstrap.*` |
 | `CONTRIBUTING.md` | Pull request title conventions, merge guidance, and local validation reminders. | `templates\MartiX.WebApi.Template\.scaffold\assets\templates\CONTRIBUTING.md.tmpl` via `scripts\bootstrap.*` |
-| `CHANGELOG.md` | Release history file that Release Please updates over time. | `templates\MartiX.WebApi.Template\CHANGELOG.md` |
-| `.release-please-manifest.json` | Release Please state file that tracks the last released version. | `templates\MartiX.WebApi.Template\.release-please-manifest.json` |
-| `version.txt` | Repository version file used by Release Please's `simple` strategy. | `templates\MartiX.WebApi.Template\version.txt` |
+| `CHANGELOG.md` | Release history file seeded into each generated repository and updated there by Release Please over time. | `templates\MartiX.WebApi.Template\CHANGELOG.md` |
+| `.release-please-manifest.json` | Release Please state file for the generated repository that tracks its last released version. | `templates\MartiX.WebApi.Template\.release-please-manifest.json` |
+| `version.txt` | Generated-repository version file used by Release Please's `simple` strategy. | `templates\MartiX.WebApi.Template\version.txt` |
 | `.editorconfig` | Shared formatting, analyzer severities, and editor conventions for the generated repository. | `templates\MartiX.WebApi.Template\.scaffold\assets\templates\.editorconfig.tmpl` via `scripts\bootstrap.*` |
 | `Directory.Build.props` | Shared MSBuild defaults such as nullable, analyzers, and build-time code-style enforcement. | `templates\MartiX.WebApi.Template\.scaffold\assets\templates\Directory.Build.props.tmpl` via `scripts\bootstrap.*` |
 | `.markdownlint-cli2.jsonc` | Shared Markdown lint defaults for generated repository docs. | `templates\MartiX.WebApi.Template\.scaffold\assets\templates\.markdownlint-cli2.jsonc.tmpl` via `scripts\bootstrap.*` |
@@ -43,7 +45,7 @@ Running `dotnet new martix-webapi -n MyProject` currently generates a solution-s
 | `qodana.yaml` | Optional Qodana defaults for token-gated static analysis. | `templates\MartiX.WebApi.Template\.scaffold\assets\templates\qodana.yaml.tmpl` via `scripts\bootstrap.*` |
 | `sonar-project.properties` | Optional Sonar defaults consumed by the token-gated quality-analysis workflow. | `templates\MartiX.WebApi.Template\.scaffold\assets\templates\sonar-project.properties.tmpl` via `scripts\bootstrap.*` |
 | `.github\workflows\ci.yml` | Starter CI workflow for generated repositories. | `templates\MartiX.WebApi.Template\.scaffold\assets\templates\.github\workflows\ci.yml.tmpl` via `scripts\bootstrap.*` |
-| `.github\workflows\release-please.yml` | Starter semantic-versioning and changelog workflow for generated repositories. | `templates\MartiX.WebApi.Template\.scaffold\assets\templates\.github\workflows\release-please.yml.tmpl` via `scripts\bootstrap.*` |
+| `.github\workflows\release-please.yml` | Starter semantic-versioning and changelog workflow for generated repositories; it is scaffolded content, not this repository's own release workflow. | `templates\MartiX.WebApi.Template\.scaffold\assets\templates\.github\workflows\release-please.yml.tmpl` via `scripts\bootstrap.*` |
 | `.github\workflows\conventional-commits.yml` | Pull request title enforcement for Conventional Commits. | `templates\MartiX.WebApi.Template\.scaffold\assets\templates\.github\workflows\conventional-commits.yml.tmpl` via `scripts\bootstrap.*` |
 | `.github\workflows\quality-analysis.yml` | Token-gated Sonar and Qodana workflow for optional static analysis. | `templates\MartiX.WebApi.Template\.scaffold\assets\templates\.github\workflows\quality-analysis.yml.tmpl` via `scripts\bootstrap.*` |
 | `.github\dependabot.yml` | Starter dependency update baseline for generated repositories. | `templates\MartiX.WebApi.Template\.scaffold\assets\templates\.github\dependabot.yml.tmpl` via `scripts\bootstrap.*` |
@@ -486,6 +488,7 @@ Use [`docs/template-validation.md`](template-validation.md) as the operational c
 
 - Bootstrap and update scripts exist, but the manifest currently materializes a focused asset set rather than every possible repo concern.
 - The generated `.github\` baseline is still intended to be understandable and tailorable per repository, even though it now includes CI, release governance, and optional quality-analysis workflows.
+- The generated release/governance baseline (`docs\RELEASE.md`, `release-please-config.json`, `.github\workflows\release-please.yml`, `CHANGELOG.md`, `version.txt`, and `.release-please-manifest.json`) applies to scaffolded repositories only and should not be repurposed as the root template-pack publish pipeline.
 - The generated AI bootstrap assets are declaration-first. `scripts\setup-ai.ps1`
   only lists or runs commands when a user explicitly invokes it.
 - Blazor is generated by default; it is not yet controlled by a template switch.

@@ -2,7 +2,10 @@
 
   <PropertyGroup>
     <PackageType>Template</PackageType>
-    <PackageVersion>1.0.0</PackageVersion>
+    <TemplatePackVersionFile Condition="'$(TemplatePackVersionFile)' == ''">$(MSBuildThisFileDirectory)version.txt</TemplatePackVersionFile>
+    <TemplatePackVersion Condition="'$(TemplatePackVersion)' == '' and Exists('$(TemplatePackVersionFile)')">$([System.IO.File]::ReadAllText('$(TemplatePackVersionFile)').Trim())</TemplatePackVersion>
+    <Version Condition="'$(Version)' == ''">$(TemplatePackVersion)</Version>
+    <PackageVersion Condition="'$(PackageVersion)' == ''">$(Version)</PackageVersion>
     <PackageId>MartiX.Dotnet.Templates</PackageId>
     <Title>MartiX .NET Templates</Title>
     <Authors>MartiXDev</Authors>
@@ -24,5 +27,10 @@
   <ItemGroup>
     <Content Include="templates\**\*" Exclude="templates\**\bin\**;templates\**\obj\**" />
   </ItemGroup>
+
+  <Target Name="ValidateTemplatePackVersion" BeforeTargets="PrepareForBuild;GenerateNuspec">
+    <Error Condition="!Exists('$(TemplatePackVersionFile)')" Text="Expected release-managed version file at '$(TemplatePackVersionFile)'." />
+    <Error Condition="Exists('$(TemplatePackVersionFile)') and '$(TemplatePackVersion)' == ''" Text="Expected a non-empty release-managed version in '$(TemplatePackVersionFile)'." />
+  </Target>
 
 </Project>

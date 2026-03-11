@@ -94,7 +94,10 @@ dotnet pack ./MartiX.Dotnet.Templates.csproj -o ./bin/Release -nologo
 ```
 
 Verify that a package such as
-`MartiX.Dotnet.Templates.1.0.0.nupkg` is created in `bin\Release\`.
+`MartiX.Dotnet.Templates.<version>.nupkg` is created in `bin\Release\`.
+Use the version emitted by the root pack project; do not infer it from
+`templates\MartiX.WebApi.Template\version.txt`, which belongs to the
+generated-repository Release Please baseline.
 
 ### 2. Install from repository root or package
 
@@ -118,13 +121,13 @@ Alternative package install:
 PowerShell:
 
 ```powershell
-dotnet new install .\bin\Release\MartiX.Dotnet.Templates.1.0.0.nupkg
+dotnet new install .\bin\Release\MartiX.Dotnet.Templates.<version>.nupkg
 ```
 
 Shell:
 
 ```sh
-dotnet new install ./bin/Release/MartiX.Dotnet.Templates.1.0.0.nupkg
+dotnet new install ./bin/Release/MartiX.Dotnet.Templates.<version>.nupkg
 ```
 
 ### 3. Confirm the template is visible
@@ -149,6 +152,81 @@ Verify that:
 - the template is identified as `MartiX Web API Template`
 - the documented `Framework`, `frontend`, and `orchestrator` options are exposed
 - the defaults remain aligned to the golden path (`frontend=blazor`, `orchestrator=aspire`)
+
+## Root package release process
+
+This section covers publishing the repository-root
+`MartiX.Dotnet.Templates` package. Do not confuse it with the generated
+repository Release Please baseline under `templates\MartiX.WebApi.Template\`;
+those files seed each scaffolded repository's own release history and are
+validated later in this guide.
+
+### Root release metadata and workflow
+
+The repository-root release state for the template pack is:
+
+- `release-please-config.json` - Release Please configuration for the root
+  package. It uses the `simple` release strategy and points at the root
+  `version.txt` and `CHANGELOG.md`.
+- `.release-please-manifest.json` - Release Please state file that tracks the
+  last released root package version.
+- `version.txt` - the source of truth for the package version. The root
+  `MartiX.Dotnet.Templates.csproj` reads this file into `Version` and
+  `PackageVersion` during build and pack.
+- `CHANGELOG.md` - the root package changelog that Release Please updates when
+  it prepares a release.
+- `.github\workflows\release.yml` - the root release workflow. Its
+  `release-please` job creates or updates the release pull request and, when a
+  release is created, the `prepare-package` job restores, builds, tests, packs,
+  uploads the `.nupkg`, exchanges GitHub OIDC for a short-lived NuGet API key,
+  and pushes the package to nuget.org.
+
+### Required GitHub and nuget.org configuration
+
+The publish job in `.github\workflows\release.yml` depends on these settings:
+
+- GitHub Actions environment: `release`
+  - The `prepare-package` job runs in this environment.
+  - Use it for any optional approval gates or environment-scoped variables.
+- GitHub variable: `NUGET_USER`
+  - Set this either on the `release` environment or at repository scope.
+  - Use the nuget.org profile name that owns or publishes
+    `MartiX.Dotnet.Templates`; do not use an email address.
+- nuget.org Trusted Publishing policy for `MartiXDev/dotnet-templates`
+  - Repository Owner: `MartiXDev`
+  - Repository: `dotnet-templates`
+  - Workflow File: `release.yml` (file name only, not the
+    `.github/workflows/` path)
+  - Environment: `release`
+
+Keep the GitHub variable, release environment, and trusted publishing policy in
+sync. If any of those values change, update the workflow and documentation
+together before attempting another publish.
+
+### Release Please maintainer flow
+
+The intended root-package release flow is:
+
+1. Merge Conventional Commit-formatted changes into `main` or `master`.
+2. The `release-please` job in `.github\workflows\release.yml` opens or updates
+   a release pull request using the root `release-please-config.json`.
+3. Review that release pull request. Release Please should update the root
+   `version.txt`, `CHANGELOG.md`, and `.release-please-manifest.json`.
+4. Merge the release pull request. Release Please creates the release tag and
+   GitHub Release for the root package version.
+5. The `prepare-package` job runs only when
+   `needs.release-please.outputs.release_created == 'true'`, checks out the
+   release tag, and publishes `MartiX.Dotnet.Templates` to nuget.org through
+   trusted publishing.
+
+Manual `workflow_dispatch` runs are supported only from `main` or `master`. The
+workflow explicitly rejects manual runs from other branches.
+
+Before merging a release-triggering change, run the repository-root baseline
+checks from this guide plus the pack command from
+[Pack and install validation](#pack-and-install-validation). If the same change
+also affects the generated repository contract, additionally run
+`.\scripts\verify-generated-assets.ps1` or `./scripts/verify-generated-assets.sh`.
 
 ## Scaffold validation
 
@@ -281,7 +359,10 @@ If the release/governance defaults change, also inspect `CONTRIBUTING.md`,
 `.github\workflows\conventional-commits.yml`,
 `.github\workflows\quality-analysis.yml`, `CHANGELOG.md`, `version.txt`, and
 `.release-please-manifest.json`. The last three files are intentionally not
-scaffold-managed, because release automation updates them over time.
+scaffold-managed, because release automation updates them over time. Treat
+these checks as generated-repository contract validation only; they do not
+validate or replace any root repository release-state files or publish
+workflow for `MartiX.Dotnet.Templates`.
 
 ## Bootstrap and update validation
 
@@ -465,6 +546,14 @@ When updating docs, confirm that the written guidance matches repository reality
    strategic source for future automation scope.
 4. Any documented generated file must be confirmed by a fresh scaffold.
 5. Any documented script or workflow must already exist, or be labeled as planned.
+6. Generated-repo Release Please files and workflows must stay clearly
+   separate from any repository-root release or publish flow for
+   `MartiX.Dotnet.Templates`.
+7. Root package release docs must stay consistent with
+   `MartiX.Dotnet.Templates.csproj`, `release-please-config.json`,
+   `.release-please-manifest.json`, `version.txt`, `CHANGELOG.md`, and
+   `.github\workflows\release.yml`, including the `release` environment and
+   `NUGET_USER` trusted-publishing prerequisite.
 
 ## Maintainer helper scripts
 
